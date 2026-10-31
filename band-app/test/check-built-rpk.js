@@ -8,7 +8,7 @@
 //   * logo.png is a real 192x192 image, not a 1x1 placeholder;
 //   * app.js contains the onCreate script, not just the empty statement "";.
 //   * the recorded version identity matches the source manifest and the file is
-//     com.minavigatering.probe.debug.0.1.1.rpk, not the shipped 0.1.0 payload;
+//     com.mapring.probe.debug.0.1.1.rpk, not the shipped 0.1.0 payload;
 //   * the diagnostic copy exists and its SHA256 equals the record.
 // Any failure exits 1; success prints check-built-rpk-ok and exits 0. No hash
 // is written into any tracked file.
@@ -25,7 +25,7 @@ const shippedOldRpk = path.join(
   repoRoot,
   "band-app",
   "dist",
-  "com.minavigatering.probe.debug.0.1.0.rpk"
+  "com.mapring.probe.debug.0.1.0.rpk"
 );
 const BG = [23, 38, 30];
 
@@ -92,7 +92,7 @@ if (record.versionName === "0.1.0") {
 // --- the recorded rpkPath must be exactly this build product ----------------
 if (!/^com\.minavigatering\.probe\.debug\.0\.1\.1\.rpk$/.test(path.basename(record.rpkPath))) {
   fail("record rpkPath file name is " + path.basename(record.rpkPath) +
-    ", expected com.minavigatering.probe.debug.0.1.1.rpk");
+    ", expected com.mapring.probe.debug.0.1.1.rpk");
 }
 if (/^com\.minavigatering\.probe\.debug\.0\.1\.0\.rpk$/.test(path.basename(record.rpkPath))) {
   fail("record rpkPath points at the shipped 0.1.0 payload, not this build");

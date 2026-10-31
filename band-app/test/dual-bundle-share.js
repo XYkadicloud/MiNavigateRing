@@ -25,7 +25,7 @@ const recordPath = path.join(repoRoot, "band-app", "dist", "rpk-build-record.jso
 // 需要指向别处时用 MIRING_BASELINE_RPK 覆盖。
 const BASELINE_RPK_REL = path.join(".worktrees", "missions",
   "MiRing-V0-probe-20261012", "band-app", "dist",
-  "com.minavigatering.probe.debug.0.1.2-diag.rpk");
+  "com.mapring.probe.debug.0.1.2-diag.rpk");
 const BASELINE_RPK = process.env.MIRING_BASELINE_RPK || findUp(BASELINE_RPK_REL);
 
 // 从 repoRoot 起逐级向上查找相对路径；找不到时仍返回一个具体候选，
@@ -41,7 +41,7 @@ function findUp(rel) {
   }
   return path.join(repoRoot, rel);
 }
-const NEW_RPK_NAME = "com.minavigatering.probe.debug.0.1.5-init.rpk";
+const NEW_RPK_NAME = "com.mapring.probe.debug.0.1.5-init.rpk";
 // Read-only byte copy of the shipped 0.1.4-refresh bundle (and its build
 // record), used as the negative fixture under the official Object-only data
 // rule. The copy never changes; its sha256 is checked on every run.
@@ -279,7 +279,7 @@ function checkFixedArtifact(rpkPath) {
   assert.strictEqual(pageCode.indexOf("tickTimer:"), -1,
     "tickTimer must stay a plain instance property, not a data field");
   const packagedName = JSON.parse(readEntry(rpkPath, "manifest.json")).package;
-  assert.strictEqual(packagedName, "com.minavigatering.probe", "packaged manifest package");
+  assert.strictEqual(packagedName, "com.mapring.probe", "packaged manifest package");
   const packagedManifest = JSON.parse(readEntry(rpkPath, "manifest.json"));
   assert.strictEqual(packagedManifest.versionName, "0.1.5-init", "packaged manifest versionName");
   assert.strictEqual(packagedManifest.versionCode, 6, "packaged manifest versionCode");

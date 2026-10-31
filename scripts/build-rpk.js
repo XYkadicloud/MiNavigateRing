@@ -267,7 +267,7 @@ if (process.argv.includes("--check")) {
     );
     process.exit(1);
   }
-  const expectedName = "com.minavigatering.probe.debug." + man.versionName + ".rpk";
+  const expectedName = man.package + ".debug." + man.versionName + ".rpk";
   if (path.basename(record.rpkPath) !== expectedName) {
     console.error("[build-rpk] --check: rpkPath " + record.rpkPath + " is not " + expectedName);
     process.exit(1);
@@ -337,6 +337,17 @@ try {
 }
 const manifestVersionName = manifest.versionName;
 const manifestVersionCode = manifest.versionCode;
+// The package name drives both the RPK filename and the pairing Mi Fitness does between
+// the phone app and the band app, so an empty one must fail here rather than produce
+// ".debug.<version>.rpk" and a bundle Mi Fitness will not associate with anything.
+if (typeof manifest.package !== "string" || manifest.package.length === 0) {
+  fail(
+    "band-app/src/manifest.json package is not a non-empty string (got " +
+    JSON.stringify(manifest.package) + "); aiot was not called and no rpk was written.",
+    null,
+    false
+  );
+}
 if (typeof manifestVersionName !== "string" || manifestVersionName.length === 0) {
   fail(
     "band-app/src/manifest.json versionName is not a non-empty string (got " +
@@ -354,7 +365,7 @@ if (!Number.isInteger(manifestVersionCode) || manifestVersionCode <= 0) {
   );
 }
 const expectedRpkName =
-  "com.minavigatering.probe.debug." + manifestVersionName + ".rpk";
+  manifest.package + ".debug." + manifestVersionName + ".rpk";
 
 // 3. Copy the existing pems and write the gitignored logo next to the manifest
 //    so that `icon: "/logo.png"` resolves against sourceRoot `src`.
