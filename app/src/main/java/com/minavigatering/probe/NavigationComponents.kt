@@ -83,8 +83,8 @@ private fun checklistVisible(phase: NavigationPhase) = phase in setOf(
 private fun TitleHeader(modeLabel: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text("导航环", color = NavigationTheme.Colors.textPrimary, fontSize = NavigationTheme.TextSize.pageTitle, fontWeight = FontWeight.Medium)
-            Text("高德步行 · 骑行导航", color = NavigationTheme.Colors.textSecondary, fontSize = NavigationTheme.TextSize.body)
+            Text("地图环", color = NavigationTheme.Colors.textPrimary, fontSize = NavigationTheme.TextSize.pageTitle, fontWeight = FontWeight.Medium)
+            Text("Google 地图步行 · 骑行导航", color = NavigationTheme.Colors.textSecondary, fontSize = NavigationTheme.TextSize.body)
         }
         ModeChip(modeLabel)
     }
@@ -133,7 +133,7 @@ private fun SettingsCard(checklist: NavigationChecklist, settings: NavigationSet
 /** [actionLabel] 为 null 时该行只显示对勾，不画按钮（电池已豁免）。 */
 private data class ChecklistRow(val label: String, val done: Boolean, val actionLabel: String?, val action: () -> Unit)
 private fun checklistRows(c: NavigationChecklist, s: NavigationSettingActions) = listOf(
-    ChecklistRow("高德通知读取", c.access, if (c.access) "查看" else "允许", s.notifications),
+    ChecklistRow("Google 地图通知读取", c.access, if (c.access) "查看" else "允许", s.notifications),
     ChecklistRow("后台运行不受限", c.batteryExempt, if (c.batteryExempt) null else "允许", s.battery),
     ChecklistRow("本应用省电策略与自启动", false, "打开", s.appDetails),
     ChecklistRow("小米运动健康后台不受限", false, "去设置", s.miFitness),
@@ -184,7 +184,7 @@ private fun modeTextColor(selected: Boolean): Color =
 @Composable
 private fun MainPhaseButton(ui: NavigationUiModel, settings: NavigationSettingActions, onMain: () -> Unit) {
     val (label, solid, action) = when (ui.phase) {
-        NavigationPhase.PERMISSION_OFF -> Triple("允许高德通知读取", true, settings.notifications)
+        NavigationPhase.PERMISSION_OFF -> Triple("允许Google 地图通知读取", true, settings.notifications)
         NavigationPhase.LISTENER_DISCONNECTED -> Triple("查看通知权限", true, settings.notifications)
         NavigationPhase.BRIDGE_OFF -> Triple("开启导航桥", true, onMain)
         else -> Triple("关闭导航桥", false, onMain)

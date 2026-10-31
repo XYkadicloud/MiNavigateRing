@@ -14,7 +14,7 @@ import org.junit.Test
  * Host JVM test for the foreground content policy (work order W-643).
  *
  * Every state below is a **synthetic fixture** built in this file — it is neither a real
- * Amap notification sample nor a watch acknowledgement. The test only proves the local
+ * Maps notification sample nor a watch acknowledgement. The test only proves the local
  * bookkeeping: which snapshot would be handed to the transport, and that heartbeats can
  * never be mistaken for navigation content or a receipt.
  */

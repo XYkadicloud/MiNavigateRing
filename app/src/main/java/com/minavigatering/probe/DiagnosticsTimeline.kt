@@ -74,10 +74,10 @@ private fun TimelineEntryList(entries: List<TimelineEntry>) {
     }
 }
 
-/** “最近一次”的一行定义：一个标签对应一类或多类事件（高德四类合并成一行）。 */
+/** “最近一次”的一行定义：一个标签对应一类或多类事件（Google 地图四类合并成一行）。 */
 private data class RecentCategory(val label: String, val events: List<TimelineEvent>)
 
-/** 14 行“最近一次”，顺序固定；高德四类取最近一条并把四类累计次数求和。 */
+/** 14 行“最近一次”，顺序固定；Google 地图四类取最近一条并把四类累计次数求和。 */
 private val RECENT_CATEGORIES = listOf(
     RecentCategory("发送轮次", listOf(TimelineEvent.SEND_ROUND)),
     RecentCategory("发送帧", listOf(TimelineEvent.FRAME_SENT)),
@@ -85,12 +85,12 @@ private val RECENT_CATEGORIES = listOf(
     RecentCategory("SDK Task失败", listOf(TimelineEvent.SDK_TASK_FAILED)),
     RecentCategory("ACK", listOf(TimelineEvent.ACK_RECEIVED)),
     RecentCategory(
-        "高德通知",
+        "Google 地图通知",
         listOf(
-            TimelineEvent.AMAP_NOTIFICATION_ACTIVE,
-            TimelineEvent.AMAP_NOTIFICATION_UNRECOGNIZED,
-            TimelineEvent.AMAP_NOTIFICATION_ENDED,
-            TimelineEvent.AMAP_NOTIFICATION_IGNORED,
+            TimelineEvent.MAPS_NOTIFICATION_ACTIVE,
+            TimelineEvent.MAPS_NOTIFICATION_UNRECOGNIZED,
+            TimelineEvent.MAPS_NOTIFICATION_ENDED,
+            TimelineEvent.MAPS_NOTIFICATION_IGNORED,
         ),
     ),
     RecentCategory("监听连上", listOf(TimelineEvent.LISTENER_CONNECTED)),

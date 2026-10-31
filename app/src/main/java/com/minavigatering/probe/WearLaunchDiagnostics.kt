@@ -49,7 +49,7 @@ fun WearLaunchDiagnostics(transport: XiaomiWearableTransport) {
         Text("拉起手环导航页（实验）", style = MaterialTheme.typography.titleSmall)
         Text(
             "先让手环退出导航页回到表盘再点；每个候选之间会停 4 秒，" +
-                "请看手环有没有亮屏、有没有打开导航环页面，并把看到的告诉检视者",
+                "请看手环有没有亮屏、有没有打开地图环页面，并把看到的告诉检视者",
             style = MaterialTheme.typography.bodySmall,
         )
         Button(

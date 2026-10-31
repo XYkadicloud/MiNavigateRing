@@ -1,6 +1,7 @@
 package com.minavigatering.probe.navigation
 
 import android.app.Notification
+import android.graphics.Bitmap
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
@@ -15,10 +16,17 @@ import com.minavigatering.probe.transport.ProbeRuntime
 import com.minavigatering.probe.transport.TimelineEvent
 import com.minavigatering.probe.transport.WearAutoLaunch
 
-/** Reads only Amap text after the user grants notification access. No raw notification logging. */
-class AmapNotificationService : NotificationListenerService() {
+/**
+ * Reads only Google Maps navigation notifications after the user grants notification access.
+ *
+ * Unlike Amap, Google Maps encodes the turn direction mostly in the notification's maneuver
+ * icon, so this service also extracts [Notification.EXTRA_LARGE_ICON] and passes its pixels to
+ * [MapsParser] for a local brightness hash (the icon is never logged or sent off-device). Text
+ * fields still feed distance / road-name parsing as a fallback.
+ */
+class MapsNotificationService : NotificationListenerService() {
     companion object {
-        @Volatile private var connected: AmapNotificationService? = null
+        @Volatile private var connected: MapsNotificationService? = null
 
         /**
          * True only while the OS has this listener bound and connected. A granted notification
@@ -38,7 +46,7 @@ class AmapNotificationService : NotificationListenerService() {
         private const val RESEND_AFTER_LAUNCH_MS = 3_000L
     }
     private val handler = Handler(Looper.getMainLooper())
-    private val turns = AmapTurnTracker(System.currentTimeMillis().toString(36))
+    private val turns = MapsTurnTracker(System.currentTimeMillis().toString(36))
     private val tracked = mutableSetOf<String>()
     private var removal: Runnable? = null
 
@@ -55,7 +63,7 @@ class AmapNotificationService : NotificationListenerService() {
         readCurrent()
     }
     private fun readCurrent() {
-        activeNotifications?.filter { it.packageName == AmapParser.PACKAGE }
+        activeNotifications?.filter { it.packageName == MapsParser.PACKAGE }
             ?.sortedBy { it.postTime }?.forEach(::onNotificationPosted)
     }
     override fun onListenerDisconnected() {
@@ -66,22 +74,31 @@ class AmapNotificationService : NotificationListenerService() {
         WearAutoLaunch.onNavigationEnded()
         handler.removeCallbacks(resendAfterLaunch)
         removal?.let(handler::removeCallbacks)
-        publish(AmapCloseout.listenerDisconnected())
+        publish(MapsCloseout.listenerDisconnected())
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        if (sbn.packageName != AmapParser.PACKAGE) return // Other apps never reach the timeline.
+        if (sbn.packageName != MapsParser.PACKAGE) return // Other apps never reach the timeline.
         if (!NavigationSettings(this).enabled) {
-            recordTimelineEvent(System.currentTimeMillis(), TimelineEvent.AMAP_NOTIFICATION_IGNORED, "bridge-off")
+            recordTimelineEvent(System.currentTimeMillis(), TimelineEvent.MAPS_NOTIFICATION_IGNORED, "bridge-off")
             return
         }
         val extras = sbn.notification.extras
         val fields = listOf(Notification.EXTRA_TITLE, Notification.EXTRA_TEXT,
             Notification.EXTRA_BIG_TEXT, Notification.EXTRA_SUB_TEXT).mapNotNull { extras.getCharSequence(it)?.toString() } +
             (extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.map { it.toString() } ?: emptyList())
-        val instruction = AmapParser.parse(sbn.packageName, fields)
+        val icon = sbn.notification.largeIcon
+            ?: (extras.get(Notification.EXTRA_LARGE_ICON) as? Bitmap)
+        val (pixels, w, h) = if (icon != null) {
+            val px = IntArray(icon.width * icon.height)
+            icon.getPixels(px, 0, icon.width, 0, 0, icon.width, icon.height)
+            Triple(px, icon.width, icon.height)
+        } else {
+            Triple(null, 0, 0)
+        }
+        val instruction = MapsParser.parse(sbn.packageName, fields, pixels, w, h)
         if (instruction == null) {
-            recordTimelineEvent(System.currentTimeMillis(), TimelineEvent.AMAP_NOTIFICATION_IGNORED, "not-navigation")
+            recordTimelineEvent(System.currentTimeMillis(), TimelineEvent.MAPS_NOTIFICATION_IGNORED, "not-navigation")
             return
         }
         recordInstruction(instruction)
@@ -92,7 +109,7 @@ class AmapNotificationService : NotificationListenerService() {
             updateNavigationPresent(tracked.isNotEmpty())
             WearAutoLaunch.onNavigationEnded()
             handler.removeCallbacks(resendAfterLaunch)
-            publish(AmapCloseout.navigationEnded())
+            publish(MapsCloseout.navigationEnded())
         } else {
             tracked.add(sbn.key)
             updateNavigationPresent(tracked.isNotEmpty())
@@ -100,17 +117,17 @@ class AmapNotificationService : NotificationListenerService() {
         }
     }
 
-    /** One category event per handled Amap notification: active, unrecognized or ended. */
-    private fun recordInstruction(instruction: AmapInstruction) {
+    /** One category event per handled Maps notification: active, unrecognized or ended. */
+    private fun recordInstruction(instruction: MapsInstruction) {
         val event = when (instruction.status) {
-            "active" -> TimelineEvent.AMAP_NOTIFICATION_ACTIVE
-            "ended" -> TimelineEvent.AMAP_NOTIFICATION_ENDED
-            else -> TimelineEvent.AMAP_NOTIFICATION_UNRECOGNIZED
+            "active" -> TimelineEvent.MAPS_NOTIFICATION_ACTIVE
+            "ended" -> TimelineEvent.MAPS_NOTIFICATION_ENDED
+            else -> TimelineEvent.MAPS_NOTIFICATION_UNRECOGNIZED
         }
         recordTimelineEvent(System.currentTimeMillis(), event, instruction.status)
     }
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        if (sbn.packageName != AmapParser.PACKAGE) return
+        if (sbn.packageName != MapsParser.PACKAGE) return
         // A removal must update the wake-lease flag before the early return below.
         val removed = tracked.remove(sbn.key)
         updateNavigationPresent(tracked.isNotEmpty())
@@ -119,17 +136,17 @@ class AmapNotificationService : NotificationListenerService() {
         // A removal alone is not proof of arrival/end. Stop displaying old directions after a grace period.
         removal = Runnable {
             // Only an expired grace with nothing tracked left is a real session end.
-            val closeout = AmapCloseout.afterRemovalGrace(tracked.isEmpty()) ?: return@Runnable
+            val closeout = MapsCloseout.afterRemovalGrace(tracked.isEmpty()) ?: return@Runnable
             WearAutoLaunch.onNavigationEnded()
             handler.removeCallbacks(resendAfterLaunch)
             publish(closeout)
-        }.also { handler.postDelayed(it, AmapCloseout.REMOVAL_GRACE_MS) }
+        }.also { handler.postDelayed(it, MapsCloseout.REMOVAL_GRACE_MS) }
     }
-    private fun publish(instruction: AmapInstruction) {
+    private fun publish(instruction: MapsInstruction) {
         val settings = NavigationSettings(this)
         if (!settings.enabled) return
         val now = System.currentTimeMillis()
-        val state = StateMessage(id = "amap-$now", sentAtMs = now, navStatus = instruction.status,
+        val state = StateMessage(id = "maps-$now", sentAtMs = now, navStatus = instruction.status,
             action = instruction.action, distanceM = instruction.distanceM, roadName = instruction.roadName,
             exitNumber = instruction.exitNumber, actionId = turns.actionId(instruction), mode = settings.mode)
         settings.save(state)
@@ -170,8 +187,8 @@ class AmapNotificationService : NotificationListenerService() {
     }
     /** Writes the wake-lease flag; only a false-to-true edge asks for one auto launch. */
     private fun updateNavigationPresent(present: Boolean) {
-        val previous = ProbeRuntime.wakePolicy.amapNavigationPresent
-        ProbeRuntime.wakePolicy.amapNavigationPresent = present
+        val previous = ProbeRuntime.wakePolicy.mapsNavigationPresent
+        ProbeRuntime.wakePolicy.mapsNavigationPresent = present
         if (!previous && present) WearAutoLaunch.onNavigationStarted(this, ::scheduleResendAfterLaunch)
     }
 
@@ -196,7 +213,7 @@ class AmapNotificationService : NotificationListenerService() {
         handler.removeCallbacks(resendAfterLaunch)
         if (connected === this) {
             connected = null
-            publish(AmapCloseout.listenerDisconnected())
+            publish(MapsCloseout.listenerDisconnected())
         }
         removal?.let(handler::removeCallbacks)
         super.onDestroy()

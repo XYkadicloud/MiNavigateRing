@@ -24,7 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.minavigatering.probe.navigation.AmapNotificationService
+import com.minavigatering.probe.navigation.MapsNotificationService
 import com.minavigatering.probe.navigation.NavigationSettings
 import com.minavigatering.probe.navigation.NavigationUiModel
 import com.minavigatering.probe.navigation.isIgnoringBatteryOptimizations
@@ -45,7 +45,7 @@ import kotlinx.coroutines.delay
  * State, side effects and callbacks only: the seven blocks are drawn by the stateless
  * [NavigationContent] and the band mirror by [NavigationHeroCard], both consuming the pure
  * [mapNavigationUi] output. Notification parsing, transport and the watch layout keep their own
- * layers — this page never matches Amap text and never invents a direction.
+ * layers — this page never matches Maps text and never invents a direction.
  */
 @Composable
 fun NavigationScreen(transport: XiaomiWearableTransport) {
@@ -148,7 +148,7 @@ private class NavigationScreenState(prefs: NavigationSettings, transport: Xiaomi
 }
 
 /**
- * Poll-driven inputs include Amap presence and the auto-launch preference; the screen only
+ * Poll-driven inputs include Maps presence and the auto-launch preference; the screen only
  * renders the result.
  */
 private fun navigationUiModel(state: NavigationScreenState, prefs: NavigationSettings): NavigationUiModel = mapNavigationUi(
@@ -159,7 +159,7 @@ private fun navigationUiModel(state: NavigationScreenState, prefs: NavigationSet
     selectedMode = state.mode,
     latest = state.latest,
     listenerDownMs = state.listenerDownMs,
-    amapNavigationPresent = ProbeRuntime.wakePolicy.amapNavigationPresent,
+    mapsNavigationPresent = ProbeRuntime.wakePolicy.mapsNavigationPresent,
     autoLaunchBand = prefs.autoLaunchBand,
 )
 
@@ -203,7 +203,7 @@ private suspend fun pollNavigationState(
     while (true) {
         val manager = context.getSystemService(NotificationManager::class.java)
         state.access = manager.isNotificationListenerAccessGranted(
-            ComponentName(context, AmapNotificationService::class.java)
+            ComponentName(context, MapsNotificationService::class.java)
         )
         state.latest = ProbeRuntime.session.latestState
         state.nodePresent = transport.currentNodeId != null
@@ -217,7 +217,7 @@ private suspend fun pollNavigationState(
 /** Accumulates the continuous listener-down window in elapsed time; zero once it is connected. */
 private fun updateListenerWindow(state: NavigationScreenState) {
     val now = SystemClock.elapsedRealtime()
-    if (AmapNotificationService.isConnected) {
+    if (MapsNotificationService.isConnected) {
         state.listenerDownSince = null
         state.listenerDownMs = 0L
         return
@@ -283,7 +283,7 @@ private fun startForegroundSession(context: Context, state: StateMessage) {
             .setAction(ProbeActions.START)
             .putExtra(ProbeForegroundService.EXTRA_STATE, NavCodec.encodeToString(state))
     )
-    AmapNotificationService.refreshCurrent()
+    MapsNotificationService.refreshCurrent()
 }
 
 /** Denied POST_NOTIFICATIONS: clear the bridge preference and report the failure unchanged. */

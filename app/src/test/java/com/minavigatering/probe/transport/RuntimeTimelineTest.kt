@@ -9,7 +9,7 @@ import org.junit.Test
  * Host JVM test for the in-memory runtime timeline (work orders W-707, W-711).
  *
  * Everything here is an in-memory synthetic fixture: the clocks are supplied by the test,
- * so no device, SDK or real Amap notification is involved. It proves the two rings (state
+ * so no device, SDK or real Maps notification is involved. It proves the two rings (state
  * capacity, traffic capacity, newest-first merge, oldest-first drop), the per-category
  * last-seen/cumulative counters that survive ring eviction, and the exact 60 s window
  * counters (notifications, frames, acks and the ack round trip).
@@ -51,7 +51,7 @@ class RuntimeTimelineTest {
             timeline.record(
                 wallMs = wall + index,
                 elapsedMs = index.toLong(),
-                event = TimelineEvent.AMAP_NOTIFICATION_ACTIVE,
+                event = TimelineEvent.MAPS_NOTIFICATION_ACTIVE,
                 detail = "synthetic #$index",
             )
         }
@@ -85,16 +85,16 @@ class RuntimeTimelineTest {
         // Window counters: every record no older than WINDOW_MS at the query instant counts,
         // so a record exactly WINDOW_MS old is still inside the window.
         val window = RuntimeTimeline()
-        window.record(wall, 1_000L, TimelineEvent.AMAP_NOTIFICATION_ENDED)
-        window.record(wall, 2_000L, TimelineEvent.AMAP_NOTIFICATION_IGNORED)
+        window.record(wall, 1_000L, TimelineEvent.MAPS_NOTIFICATION_ENDED)
+        window.record(wall, 2_000L, TimelineEvent.MAPS_NOTIFICATION_IGNORED)
         window.record(wall, 3_000L, TimelineEvent.SEND_ROUND)
         window.recordFrameSent(wall, 4_000L, "frame-abcdef")
         window.recordFrameSent(wall, 5_000L, "frame-222222")
         window.recordAck(wall, 6_000L, AckRecord("probe-1", 120L))
         window.recordAck(wall, 7_000L, AckRecord("probe-2", 240L))
         // Stale (older than the window) and future (ahead of now) entries must be excluded.
-        window.record(wall, 500L, TimelineEvent.AMAP_NOTIFICATION_ACTIVE)
-        window.record(wall, 500_000L, TimelineEvent.AMAP_NOTIFICATION_ACTIVE)
+        window.record(wall, 500L, TimelineEvent.MAPS_NOTIFICATION_ACTIVE)
+        window.record(wall, 500_000L, TimelineEvent.MAPS_NOTIFICATION_ACTIVE)
         window.recordAck(wall, 500L, AckRecord("probe-3", 9_999L))
 
         val now = 61_000L
@@ -120,11 +120,11 @@ class RuntimeTimelineTest {
      */
     private fun assertFutureStampsInTheSameMillisecondAreExcluded() {
         val timeline = RuntimeTimeline()
-        timeline.record(wall, 10_000L, TimelineEvent.AMAP_NOTIFICATION_ACTIVE)
+        timeline.record(wall, 10_000L, TimelineEvent.MAPS_NOTIFICATION_ACTIVE)
         timeline.recordFrameSent(wall, 10_000L, "now-frame")
         timeline.recordAck(wall, 10_000L, AckRecord("now-ack", 50L))
         // Same second, but a later elapsed stamp: it does not belong to the query instant.
-        timeline.record(wall, 10_001L, TimelineEvent.AMAP_NOTIFICATION_ENDED)
+        timeline.record(wall, 10_001L, TimelineEvent.MAPS_NOTIFICATION_ENDED)
         timeline.recordFrameSent(wall, 10_001L, "future-frame")
         timeline.recordAck(wall, 10_001L, AckRecord("future-ack", 700L))
 

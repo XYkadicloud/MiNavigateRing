@@ -1,6 +1,6 @@
 {
   "package": "com.minavigatering.probe",
-  "name": "导航环",
+  "name": "地图环",
   "versionName": "0.2.0-navigation",
   "versionCode": 11,
   "icon": "/logo.png",

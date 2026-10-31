@@ -10,7 +10,7 @@ import org.junit.Test
  * Host JVM test for the wakelock lease policy (work order W-731).
  *
  * Every [StateMessage] below is a **synthetic fixture** built in this file: it is neither a
- * real Amap notification sample nor a device reading. The test proves only the local hold
+ * real Maps notification sample nor a device reading. The test proves only the local hold
  * rule, driven entirely by caller-supplied elapsed times so no system clock is involved.
  */
 class WakeLeasePolicyTest {
@@ -36,7 +36,7 @@ class WakeLeasePolicyTest {
     /** One isolated evaluation on a fresh instance, so an earlier reason cannot leak grace in. */
     private fun holds(latest: StateMessage?, forced: Boolean = false, noticeShowing: Boolean = false): Boolean {
         val policy = WakeLeasePolicy()
-        policy.amapNavigationPresent = noticeShowing
+        policy.mapsNavigationPresent = noticeShowing
         return policy.shouldHold(nowElapsedMs = 1_000, latest = latest, forced = forced)
     }
 
@@ -56,7 +56,7 @@ class WakeLeasePolicyTest {
             holds(frame(id = TimedProbeSequence.ID_PREFIX + "runA-1")),
         )
         assertTrue(
-            "a showing Amap notice holds even when the latest snapshot is unrecognized",
+            "a showing Maps notice holds even when the latest snapshot is unrecognized",
             holds(frame(navStatus = NavProtocol.STATUS_UNRECOGNIZED), noticeShowing = true),
         )
         assertTrue("a forced call holds with no snapshot at all", holds(null, forced = true))

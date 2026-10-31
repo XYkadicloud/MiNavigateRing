@@ -238,15 +238,15 @@ fun ProbeScreen(transport: XiaomiWearableTransport) {
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("MiNavigateRing 探针", style = MaterialTheme.typography.headlineSmall)
+        Text("MapRing 探针", style = MaterialTheme.typography.headlineSmall)
         Text("链路：$linkText")
         Text("状态：$lastStatus")
         Text("包名：com.minavigatering.probe")
 
-        // Synthetic fixtures: no Amap notification has been sampled yet, so these samples
+        // Synthetic fixtures: no Maps notification has been sampled yet, so these samples
         // are manufactured for protocol/state verification only.
         Text(
-            "注意：以下道路名与转向均为合成夹具，不代表已验收的高德真实解析。",
+            "注意：以下道路名与转向均为合成夹具，不代表已验收的Google 地图真实解析。",
             style = MaterialTheme.typography.bodySmall,
         )
 

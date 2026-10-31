@@ -16,10 +16,10 @@ enum class TimelineEvent {
     POWER_SAVE_CHANGED,
     LISTENER_CONNECTED,
     LISTENER_DISCONNECTED,
-    AMAP_NOTIFICATION_ACTIVE,
-    AMAP_NOTIFICATION_UNRECOGNIZED,
-    AMAP_NOTIFICATION_ENDED,
-    AMAP_NOTIFICATION_IGNORED,
+    MAPS_NOTIFICATION_ACTIVE,
+    MAPS_NOTIFICATION_UNRECOGNIZED,
+    MAPS_NOTIFICATION_ENDED,
+    MAPS_NOTIFICATION_IGNORED,
     SEND_ROUND,
     FRAME_SENT,
     SDK_TASK_SUCCEEDED,
@@ -28,12 +28,12 @@ enum class TimelineEvent {
     RECOVERY_RESULT,
     ;
 
-    /** True for the four Amap categories that count as "one notification arrived". */
-    val isAmapNotification: Boolean
-        get() = this == AMAP_NOTIFICATION_ACTIVE ||
-            this == AMAP_NOTIFICATION_UNRECOGNIZED ||
-            this == AMAP_NOTIFICATION_ENDED ||
-            this == AMAP_NOTIFICATION_IGNORED
+    /** True for the four Maps categories that count as "one notification arrived". */
+    val isMapsNotification: Boolean
+        get() = this == MAPS_NOTIFICATION_ACTIVE ||
+            this == MAPS_NOTIFICATION_UNRECOGNIZED ||
+            this == MAPS_NOTIFICATION_ENDED ||
+            this == MAPS_NOTIFICATION_IGNORED
 }
 
 /** The two clocks of one entry: wall clock and monotonic elapsedRealtime, both in ms. */
@@ -339,7 +339,7 @@ class RuntimeTimeline {
         when (entry.event) {
             TimelineEvent.FRAME_SENT -> appendStamp(frameStamps, elapsedMs)
             TimelineEvent.ACK_RECEIVED -> recordAckInWindow(entry, elapsedMs)
-            else -> if (entry.event.isAmapNotification) appendStamp(notificationStamps, elapsedMs)
+            else -> if (entry.event.isMapsNotification) appendStamp(notificationStamps, elapsedMs)
         }
     }
 

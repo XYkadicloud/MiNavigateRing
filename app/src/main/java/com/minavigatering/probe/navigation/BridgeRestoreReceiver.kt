@@ -84,7 +84,7 @@ class BridgeRestoreReceiver : BroadcastReceiver() {
     /** Rebinds the notification listener and keeps the restore going whatever Android decides. */
     private fun rebindListenerQuietly(context: Context) {
         try {
-            NotificationListenerService.requestRebind(ComponentName(context, AmapNotificationService::class.java))
+            NotificationListenerService.requestRebind(ComponentName(context, MapsNotificationService::class.java))
         } catch (e: RuntimeException) {
             // A refused rebind is not a restore failure: the START below still runs.
         }

@@ -376,8 +376,8 @@ class ProbeForegroundService : Service() {
             Notification.Builder(this)
         }
         return builder
-            .setContentTitle("MiNavigateRing 导航桥")
-            .setContentText("高德导航同步已开启")
+            .setContentTitle("MapRing 导航桥")
+            .setContentText("Google 地图导航同步已开启")
             .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
             .setOngoing(true)
             .build()

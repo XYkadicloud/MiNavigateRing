@@ -8,15 +8,15 @@ import com.minavigatering.probe.protocol.StateMessage
  *
  * Pure Kotlin on purpose: no `android.*` and no `com.xiaomi.*`, and no system clock read —
  * the caller passes `nowElapsedMs`, so the hold/release boundary is host-testable with
- * synthetic fixtures. A hold reason is one of: a recognised Amap navigation notification is
+ * synthetic fixtures. A hold reason is one of: a recognised Maps navigation notification is
  * currently showing, the caller forces it, or the newest snapshot is a concrete active
  * navigation frame that is not a synthetic regression probe frame.
  */
 class WakeLeasePolicy {
 
-    /** Written by the notification listener: at least one recognised Amap navigation notice shows. */
+    /** Written by the notification listener: at least one recognised Maps navigation notice shows. */
     @Volatile
-    var amapNavigationPresent: Boolean = false
+    var mapsNavigationPresent: Boolean = false
 
     /** Elapsed timestamp of the most recent evaluation that had a hold reason; null if none. */
     private var lastReasonElapsedMs: Long? = null
@@ -36,9 +36,9 @@ class WakeLeasePolicy {
         return nowElapsedMs - lastReason < RELEASE_GRACE_MS
     }
 
-    /** Amap notice present, forced hold, or a real active navigation frame (not a probe frame). */
+    /** Maps notice present, forced hold, or a real active navigation frame (not a probe frame). */
     private fun hasHoldReason(latest: StateMessage?, forced: Boolean): Boolean =
-        amapNavigationPresent || forced || isLiveActiveFrame(latest)
+        mapsNavigationPresent || forced || isLiveActiveFrame(latest)
 
     private fun isLiveActiveFrame(latest: StateMessage?): Boolean =
         latest != null &&

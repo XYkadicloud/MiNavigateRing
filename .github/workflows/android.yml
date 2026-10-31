@@ -1,0 +1,62 @@
+name: Android APK
+
+on:
+  push:
+    branches: [ google-maps, main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # app/build.gradle.kts 的 generateDebugSigning 任务调用 `python`；
+      # ubuntu runner 默认只有 python3，这里补一个别名。
+      - name: Ensure `python` exists
+        run: |
+          if ! command -v python >/dev/null 2>&1; then
+            sudo ln -s "$(command -v python3)" /usr/local/bin/python
+          fi
+          python --version
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platform (best effort)
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-37" "build-tools;37.0.0" "platform-tools" || true
+
+      # 小米官方 SDK 的 AAR 不随仓库分发。这里在构建时从官方示例包取回，
+      # 并用仓库自带的 check-aar-hash.py 校验 SHA256，通过后才进入编译。
+      - name: Fetch + verify official Xiaomi AAR
+        run: |
+          curl -sL -o /tmp/demo.zip https://cdn.cnbj3-fusion.fds.api.mi-img.com/quickapp-vela/interconnect_dev_test_demo.zip
+          echo "zip sha256: $(sha256sum /tmp/demo.zip | cut -d' ' -f1)"
+          rm -rf /tmp/demo && mkdir -p /tmp/demo && unzip -oq /tmp/demo.zip -d /tmp/demo
+          mkdir -p app/libs
+          AAR="$(find /tmp/demo -name 'xms-wearable-lib_1.4_release.aar' | head -1)"
+          echo "aar: $AAR"
+          cp "$AAR" app/libs/
+          python scripts/check-aar-hash.py
+
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn

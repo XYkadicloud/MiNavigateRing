@@ -13,7 +13,7 @@ class NavigationUnavailableReasonTest {
         navStatus: String = NavProtocol.STATUS_ACTIVE,
         action: String? = "left",
         distanceM: Int? = 32,
-        roadName: String? = "\u4e2d\u5173\u6751\u5927\u8857",
+        roadName: String? = "中关村大街",
     ): StateMessage = StateMessage(
         id = id,
         sentAtMs = 1L,
@@ -27,15 +27,15 @@ class NavigationUnavailableReasonTest {
 
     private val restoreId = NavigationSettings.RESTORE_ID_PREFIX + "1700000000000"
 
-    private val originalWaiting = "\u8bf7\u5728\u624b\u73af\u6253\u5f00\u5bfc\u822a\u9875\uff0c\u518d\u5728\u9ad8\u5fb7\u5f00\u59cb\u5bfc\u822a\u3002"
+    private val originalWaiting = "请在手环打开导航页，再在 Google 地图开始导航。"
     private val autoLaunchWaiting =
-        "\u5728\u9ad8\u5fb7\u5f00\u59cb\u6b65\u884c\u6216\u9a91\u884c\u5bfc\u822a\uff0c\u624b\u73af\u5bfc\u822a\u9875\u4f1a\u81ea\u52a8\u6253\u5f00\u3002"
+        "在 Google 地图开始步行或骑行导航，手环导航页会自动打开。"
     private val unknownAction =
-        "\u9ad8\u5fb7\u7ed9\u51fa\u7684\u8f6c\u5411\u52a8\u4f5c\u65e0\u6cd5\u8bc6\u522b\uff0c\u624b\u73af\u4e0d\u4f1a\u663e\u793a\u731c\u6d4b\u7684\u65b9\u5411\u3002"
+        "Google 地图给出的转向动作无法识别，手环不会显示猜测的方向。"
     private val actionMissing =
-        "\u9ad8\u5fb7\u6b63\u5728\u5bfc\u822a\uff0c\u4f46\u8fd9\u6761\u63d0\u793a\u8bfb\u4e0d\u51fa\u8f6c\u5411\u65b9\u5411\u3002\u624b\u73af\u4e0d\u4f1a\u663e\u793a\u731c\u6d4b\u7684\u65b9\u5411\uff0c\u8bf7\u770b\u9ad8\u5fb7\u6216\u7b49\u4e0b\u4e00\u6761\u63d0\u793a\u3002"
+        "Google 地图正在导航，但这条提示读不出转向方向。手环不会显示猜测的方向，请看 Google 地图或等下一条提示。"
     private val noNotice =
-        "\u6ca1\u6709\u8bfb\u5230\u9ad8\u5fb7\u7684\u5bfc\u822a\u63d0\u793a\uff1a\u5bfc\u822a\u53ef\u80fd\u5df2\u7ed3\u675f\uff0c\u6216\u9ad8\u5fb7\u5df2\u9000\u51fa\u3002\u8981\u7ee7\u7eed\u8bf7\u56de\u5230\u9ad8\u5fb7\u91cd\u65b0\u5f00\u59cb\u5bfc\u822a\u3002"
+        "没有读到 Google 地图的导航提示：导航可能已结束，或 Google 地图已退出。要继续请回到 Google 地图重新开始导航。"
 
     // (a) A restored cold-start snapshot waits, and the waiting sentence follows the home switch.
     @Test
@@ -50,7 +50,7 @@ class NavigationUnavailableReasonTest {
         )
         val autoOn = mapNavigationUi(true, true, true, true, NavProtocol.MODE_WALK, restored, autoLaunchBand = true)
         assertEquals(NavigationPhase.WAITING, autoOn.phase)
-        assertEquals("\u7b49\u5f85\u9ad8\u5fb7\u5bfc\u822a", autoOn.headline)
+        assertEquals("等待 Google 地图导航", autoOn.headline)
         assertEquals(autoLaunchWaiting, autoOn.guidance)
         assertFalse(autoOn.showAsValidInstruction)
         val autoOff = mapNavigationUi(true, true, true, true, NavProtocol.MODE_WALK, restored, autoLaunchBand = false)
@@ -78,36 +78,36 @@ class NavigationUnavailableReasonTest {
             distanceM = null,
             roadName = null,
         )
-        val amapOn = mapNavigationUi(
+        val mapsOn = mapNavigationUi(
             true, true, true, true, NavProtocol.MODE_WALK, unrecognized,
-            amapNavigationPresent = true,
+            mapsNavigationPresent = true,
         )
-        assertEquals(NavigationPhase.UNAVAILABLE, amapOn.phase)
-        assertEquals("\u4fe1\u606f\u6682\u4e0d\u53ef\u7528", amapOn.headline)
-        assertEquals(actionMissing, amapOn.guidance)
-        val amapOff = mapNavigationUi(
+        assertEquals(NavigationPhase.UNAVAILABLE, mapsOn.phase)
+        assertEquals("信息暂不可用", mapsOn.headline)
+        assertEquals(actionMissing, mapsOn.guidance)
+        val mapsOff = mapNavigationUi(
             true, true, true, true, NavProtocol.MODE_WALK, unrecognized,
-            amapNavigationPresent = false,
+            mapsNavigationPresent = false,
         )
-        assertEquals(NavigationPhase.UNAVAILABLE, amapOff.phase)
-        assertEquals("\u4fe1\u606f\u6682\u4e0d\u53ef\u7528", amapOff.headline)
-        assertEquals(noNotice, amapOff.guidance)
+        assertEquals(NavigationPhase.UNAVAILABLE, mapsOff.phase)
+        assertEquals("信息暂不可用", mapsOff.headline)
+        assertEquals(noNotice, mapsOff.guidance)
         val mysteryAction = mapNavigationUi(
             true, true, true, true, NavProtocol.MODE_WALK,
             state(navStatus = NavProtocol.STATUS_ACTIVE, action = "mystery"),
-            amapNavigationPresent = true,
+            mapsNavigationPresent = true,
         )
         assertEquals(NavigationPhase.UNAVAILABLE, mysteryAction.phase)
-        assertEquals("\u4fe1\u606f\u6682\u4e0d\u53ef\u7528", mysteryAction.headline)
+        assertEquals("信息暂不可用", mysteryAction.headline)
         assertEquals(unknownAction, mysteryAction.guidance)
-        assertEquals(3, setOf(amapOn.guidance, amapOff.guidance, mysteryAction.guidance).size)
+        assertEquals(3, setOf(mapsOn.guidance, mapsOff.guidance, mysteryAction.guidance).size)
     }
 
     // (c) None of the new sentences carries a word the existing screen test forbids.
     @Test
     fun newSentencesCarryNoForbiddenWording() {
         val newSentences = listOf(autoLaunchWaiting, unknownAction, actionMissing, noNotice)
-        val banned = listOf("left", "slight-right", "roundabout-exit", "\u4e0d\u9ed8\u8ba4\u76f4\u884c", "\u901a\u9053\u4efb\u52a1", "\u5bfc\u822a\u4e2d", "\u5df2\u786e\u8ba4", "\u5df2\u8fde\u63a5", "\u5df2\u6536\u5230")
+        val banned = listOf("left", "slight-right", "roundabout-exit", "不默认直行", "通道任务", "导航中", "已确认", "已连接", "已收到")
         for (sentence in newSentences) {
             for (word in banned) {
                 assertFalse("$word in $sentence", sentence.contains(word))

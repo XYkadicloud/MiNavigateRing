@@ -5,7 +5,7 @@ package com.minavigatering.probe.protocol
  *
  * Pure Kotlin on purpose: the unit tests exercise this without an Android SDK or the
  * xms-wearable AAR on the classpath. See PROJECT_SPEC.md section 4 (职责边界) — this layer
- * transports state only; it never matches Amap text and never renders.
+ * transports state only; it never matches Maps text and never renders.
  */
 object NavProtocol {
 
