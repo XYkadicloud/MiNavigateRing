@@ -98,6 +98,21 @@ class MapsNotificationService : NotificationListenerService() {
         } else {
             Triple(null, 0, 0)
         }
+        // 图标哈希标定：把当前图标的哈希、尺寸、文字打到 logcat，并把原图存到
+        // 应用外部目录（adb pull 可取）。用于在陌生机型上补 iconHashMap。
+        if (icon != null && pixels != null) {
+            val hash = MapsParser.hashIcon(pixels, w, h)
+            android.util.Log.i("MapsIcon", "hash=$hash w=$w h=$h text=${fields.joinToString(" | ")}")
+            try {
+                val dir = java.io.File(getExternalFilesDir(null), "maps-icons")
+                dir.mkdirs()
+                java.io.File(dir, "icon_${hash}_${System.currentTimeMillis()}.png").outputStream().use {
+                    icon.compress(Bitmap.CompressFormat.PNG, 100, it)
+                }
+            } catch (_: Exception) {
+                // 标定辅助，失败不影响主流程
+            }
+        }
         val instruction = MapsParser.parse(sbn.packageName, fields, pixels, w, h)
         if (instruction == null) {
             recordTimelineEvent(System.currentTimeMillis(), TimelineEvent.MAPS_NOTIFICATION_IGNORED, "not-navigation")
