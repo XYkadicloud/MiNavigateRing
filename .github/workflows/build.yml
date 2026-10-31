@@ -1,5 +1,7 @@
-name: Android APK
+name: Build APK + RPK
 
+# 手机 APK 与手环 RPK 必须使用同一份签名证书（官方 interconnect 要求），
+# 因此放在同一个 job 里：先生成签名，再依次编译，产物一起上传。
 on:
   push:
     branches: [ google-maps, main ]
@@ -16,6 +18,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       # app/build.gradle.kts 的 generateDebugSigning 任务调用 `python`；
       # ubuntu runner 默认只有 python3，这里补一个别名。
@@ -34,8 +41,12 @@ jobs:
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
           sdkmanager "platforms;android-37" "build-tools;37.0.0" "platform-tools" || true
 
-      # 小米官方 SDK 的 AAR 不随仓库分发。这里在构建时从官方示例包取回，
-      # 并用仓库自带的 check-aar-hash.py 校验 SHA256，通过后才进入编译。
+      # 统一生成一次签名；APK 和 RPK 都用它，证书才会一致。
+      - name: Generate shared debug signing
+        run: python scripts/gen-debug-signing.py
+
+      # 小米官方 SDK 的 AAR 不随仓库分发。构建时从官方示例包取回，
+      # 并用仓库自带的 check-aar-hash.py 校验 SHA256，通过后才编译。
       - name: Fetch + verify official Xiaomi AAR
         run: |
           curl -sL -o /tmp/demo.zip https://cdn.cnbj3-fusion.fds.api.mi-img.com/quickapp-vela/interconnect_dev_test_demo.zip
@@ -53,10 +64,24 @@ jobs:
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
+      - name: Install band dependencies
+        run: cd band-app && npm install
+
+      - name: Build RPK
+        run: node scripts/build-rpk.js
+
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+
+      - name: Upload RPK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: band-rpk
+          path: band-app/dist/*.rpk
           if-no-files-found: warn
