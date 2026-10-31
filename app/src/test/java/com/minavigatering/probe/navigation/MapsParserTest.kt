@@ -59,8 +59,8 @@ class MapsParserTest {
         assertEquals("left", i?.action)
         assertEquals(500, i?.distanceM)
         assertEquals("中山路", i?.roadName)
-        assertEquals(1500, parse("1.5公里后右前方转弯").distanceM)
-        assertEquals("slight-right", parse("1.5公里后右前方转弯").action)
+        assertEquals(1500, parse("1.5公里后右前方转弯")?.distanceM)
+        assertEquals("slight-right", parse("1.5公里后右前方转弯")?.action)
     }
 
     @Test fun englishDistanceAndRoadAndDirection() {
@@ -75,9 +75,9 @@ class MapsParserTest {
     }
 
     @Test fun unitVariants() {
-        assertEquals(1609, parse("1 mi to the destination").distanceM) // approximate miles
-        assertEquals(305, parse("1000 ft ahead").distanceM) // approximate feet
-        assertEquals(200, parse("200 m").distanceM)
+        assertEquals(1609, parse("1 mi to the destination")?.distanceM) // approximate miles
+        assertEquals(305, parse("1000 ft ahead")?.distanceM) // approximate feet
+        assertEquals(200, parse("200 m")?.distanceM)
     }
 
     @Test fun unrelatedIsNotNavigation() {
@@ -86,11 +86,11 @@ class MapsParserTest {
     }
 
     @Test fun endAndRoundaboutExit() {
-        assertEquals("ended", parse("You have arrived at your destination").status)
-        assertEquals("ended", parse("导航已结束").status)
-        assertEquals("roundabout-exit", parse("50米后驶出环岛，第3个出口").action)
-        assertEquals(3, parse("50米后驶出环岛，第3个出口").exitNumber)
-        assertEquals("uturn-right", parse("30米后向右掉头").action)
+        assertEquals("ended", parse("You have arrived at your destination")?.status)
+        assertEquals("ended", parse("导航已结束")?.status)
+        assertEquals("roundabout-exit", parse("50米后驶出环岛，第3个出口")?.action)
+        assertEquals(3, parse("50米后驶出环岛，第3个出口")?.exitNumber)
+        assertEquals("uturn-right", parse("30米后向右掉头")?.action)
     }
 
     @Test fun doesNotGuessDirection() {
