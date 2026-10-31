@@ -1,6 +1,7 @@
 package com.minavigatering.probe.navigation
 
 import android.app.Notification
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.content.Intent
@@ -88,11 +89,10 @@ class MapsNotificationService : NotificationListenerService() {
         val fields = listOf(Notification.EXTRA_TITLE, Notification.EXTRA_TEXT,
             Notification.EXTRA_BIG_TEXT, Notification.EXTRA_SUB_TEXT).mapNotNull { extras.getCharSequence(it)?.toString() } +
             (extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.map { it.toString() } ?: emptyList())
-        // 转向图标：Android 10+ 的 largeIcon 是 Icon（typ=BITMAP），不是裸 Bitmap。
-        // 先兼容旧版裸 Bitmap，再走 Icon.getBitmap()。
+        // 转向图标：Android 10+ 的 largeIcon 常是 Icon（typ=BITMAP），不是裸 Bitmap。
+        // extras 里的 android.largeIcon 就是它；先兼容裸 Bitmap，再用 Icon.loadDrawable 转位图。
         val icon: Bitmap? = (extras.get(Notification.EXTRA_LARGE_ICON) as? Bitmap)
-            ?: (extras.get(Notification.EXTRA_LARGE_ICON) as? Icon)?.bitmapOrNull()
-            ?: sbn.notification.largeIcon?.bitmapOrNull()
+            ?: (extras.get(Notification.EXTRA_LARGE_ICON) as? Icon)?.toBitmapOrNull(this)
         val (pixels, w, h) = if (icon != null) {
             val px = IntArray(icon.width * icon.height)
             icon.getPixels(px, 0, icon.width, 0, 0, icon.width, icon.height)
@@ -239,5 +239,14 @@ class MapsNotificationService : NotificationListenerService() {
     }
 }
 
-/** 只有 BITMAP 类型的 Icon 才有可用的位图；其他类型返回 null。 */
-private fun Icon.bitmapOrNull(): Bitmap? = if (type == Icon.TYPE_BITMAP) bitmap else null
+/** 把任意类型的 Icon 画成位图；用于读取 Google 地图的转向图标。 */
+private fun Icon.toBitmapOrNull(context: Context): Bitmap? {
+    val drawable = loadDrawable(context) ?: return null
+    val w = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 96
+    val h = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 96
+    val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bmp)
+    drawable.setBounds(0, 0, w, h)
+    drawable.draw(canvas)
+    return bmp
+}
