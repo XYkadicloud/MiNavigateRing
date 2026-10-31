@@ -17,7 +17,18 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.minavigatering.probe"
+        // 与 namespace 故意分开。
+        //
+        // Mi Fitness（com.xiaomi.wearable）在**首次授权**时按 Android applicationId 记下
+        // 调用方的证书指纹，之后每次 checkPermission / sendMessage 都比对，而且
+        // 「设备授权管理」里的开关只控制权限、不会重写这条记录。所以换过一次证书的包名
+        // 就永久失配（dbFingerprint ≠ curFingerPrint → SignatureVerifyFailedException），
+        // 卸载重装也清不掉（记录跟着包名活着）。
+        //
+        // 换一个 applicationId 等于在 Mi Fitness 里换一张白纸：没有旧记录，首次授权时
+        // 才会登记当前证书。签名材料已固化进 GitHub Secrets，之后证书不再变，只换这一次。
+        // namespace 保持原值，组件类名（.navigation.MapsNotificationService）因此不变。
+        applicationId = "com.mapring.probe"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

@@ -285,7 +285,14 @@ function checkFixedArtifact(rpkPath) {
   assert.strictEqual(packagedManifest.versionCode, 6, "packaged manifest versionCode");
   const gradle = fs.readFileSync(APP_GRADLE, "utf8").match(/applicationId\s*=\s*"([^"]+)"/);
   assert.ok(gradle, "could not read applicationId from " + APP_GRADLE);
-  assert.strictEqual(gradle[1], packagedName, "Android applicationId must match the rpk package");
+  // The two ids used to be identical. They are now deliberately different: the Android
+  // applicationId had to change so Mi Fitness stops rejecting the app's signing
+  // fingerprint (it records the fingerprint per applicationId on first grant and never
+  // rewrites it), while the RPK package must stay put or the band would show a second,
+  // orphaned app entry. What still has to hold is that neither is empty and that the
+  // RPK package is the expected legacy value.
+  assert.ok(gradle[1] && gradle[1].indexOf(".") !== -1, "Android applicationId must look like a package");
+  assert.strictEqual(gradle[1], "com.mapring.probe", "Android applicationId");
   return { packagedName, packagedManifest };
 }
 
