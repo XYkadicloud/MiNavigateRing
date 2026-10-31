@@ -52,6 +52,44 @@ class MapsParserTest {
         assertEquals("left", instr?.action)
     }
 
+    // --- icon channel: tolerance matching ---------------------------------
+
+    @Test fun exactSeedHashStillWins() {
+        assertEquals("left", MapsParser.lookupIcon("3-59-0-0-123-151-99-71-11-71-0-95-0-0-0-47"))
+        assertEquals("right", MapsParser.lookupIcon("0-0-59-3-71-99-151-123-95-0-71-11-47-0-0-0"))
+    }
+
+    @Test fun measuredDeviceHashesResolveWithoutExactHit() {
+        // Real hashes captured on CPH1823 / Android 10 / Maps navigation (99x99 largeIcon).
+        // Neither equals a seed string, so only the tolerant nearest-neighbour can place them.
+        assertEquals("right", MapsParser.lookupIcon("0-0-49-1-70-125-170-118-119-0-74-14-63-0-0-0"))
+        assertEquals("straight", MapsParser.lookupIcon("0-31-38-0-0-154-163-2-0-45-54-0-0-22-26-0"))
+    }
+
+    @Test fun mirroredDirectionsAreNotConfused() {
+        // A right-turn glyph must never be reported as a left turn: the two seeds are mirrors
+        // and sit close together in hash space.
+        val right = MapsParser.lookupIcon("0-0-49-1-70-125-170-118-119-0-74-14-63-0-0-0")
+        assertNotEquals("left", right)
+        val left = MapsParser.lookupIcon("0-0-0-0-120-150-100-70-10-70-0-95-0-0-0-47")
+        assertNotEquals("right", left)
+    }
+
+    @Test fun unknownIconNeverGuesses() {
+        assertNull(MapsParser.lookupIcon("255-255-255-255-255-255-255-255-255-255-255-255-255-255-255-255"))
+        assertNull(MapsParser.lookupIcon("0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0"))
+        assertNull(MapsParser.lookupIcon("not-a-hash"))
+        assertNull(MapsParser.lookupIcon("1-2-3"))
+    }
+
+    @Test fun unrecognisedIconFallsBackToTextChannel() {
+        // Icon present but unreadable: the text channel must still produce the direction.
+        val lumas = List(16) { 255 }
+        val instr = parse("300米后左转进入中山路", regionLumaBitmap(lumas, 64), 64, 64)
+        assertEquals("left", instr?.action)
+        assertEquals(300, instr?.distanceM)
+    }
+
     // --- text channel (no icon) -------------------------------------------
 
     @Test fun chineseDistanceAndRoadAndDirection() {

@@ -64,7 +64,41 @@ object MapsParser {
         "0-59-79-0-0-131-159-3-39-131-147-3-0-0-39-15" to "roundabout-exit",
         "0-51-115-15-11-115-23-107-75-203-51-95-0-15-0-47" to "uturn-left",
         "99-131-11-0-119-111-39-11-67-167-203-143-0-55-91-103" to "arrive",
+        // 实测标定（CPH1823 / Android 10 / Maps 导航态，图标 99x99）。
+        // 这两个哈希与上面种子的数值不同（DPI + 版本重绘），但结构一致；精确匹配会漏，
+        // 所以下面 lookupIcon() 还会做一次带容差的最近邻。留在这里是为了让精确命中生效，
+        // 并作为该机型的地面真值记录。
+        "0-0-49-1-70-125-170-118-119-0-74-14-63-0-0-0" to "right",
+        "0-31-38-0-0-154-163-2-0-45-54-0-0-22-26-0" to "straight",
     )
+
+    /**
+     * 最近邻匹配的容差：16 个区域平均灰度的「平均绝对差」上限（0..255 尺度）。
+     *
+     * 精确匹配对 DPI、系统字体缩放、Google 重绘图标都不稳，而方向本身只由图案形状决定，
+     * 所以形状相同、数值整体漂移的哈希应该仍然命中。实测：本机右转图标对种子 `right`
+     * 的距离是 6.81，对次优（roundabout-exit）是 22.06；直行图标对种子 `straight` 是
+     * 5.31，次优 25.19。取 18 能把两者都收进来，同时挡住形状不同的图案。
+     */
+    private const val ICON_MATCH_MAX_MAD = 18.0
+
+    /**
+     * 冠军必须比「最佳的不同方向」还要好这么多倍，否则宁可判为读不出。
+     *
+     * 左转和右转是镜像，数值上彼此接近；只卡距离阈值容易把左转认成右转。这一条保证
+     * 只有明显更优的那个方向才被采纳——识别不出就让手环显示「暂无导航」，绝不猜。
+     */
+    private const val ICON_MATCH_MARGIN = 0.6
+
+    /** 预解析的种子向量，避免每次通知都重新切分字符串。 */
+    private val iconVectors: List<Pair<IntArray, String>> by lazy {
+        iconHashMap.mapNotNull { (hash, action) ->
+            val parts = hash.split('-')
+            if (parts.size != 16) return@mapNotNull null
+            val vec = IntArray(16) { parts[it].toIntOrNull() ?: return@mapNotNull null }
+            vec to action
+        }
+    }
 
     /**
      * Direction words as a text fallback. More specific phrases first so e.g. "slight left"
@@ -132,7 +166,7 @@ object MapsParser {
         // Direction: icon hash wins, text fallback otherwise.
         val actionFromIcon = iconPixels
             ?.let { hashIcon(it, iconW, iconH) }
-            ?.let { iconHashMap[it] }
+            ?.let { lookupIcon(it) }
         val foundText = directions.firstOrNull { it.first in lower }
         val action = actionFromIcon ?: foundText?.second
 
@@ -180,6 +214,48 @@ object MapsParser {
     // --- Icon hash (pure, JVM-testable; the service converts Bitmap -> IntArray) ---
 
     /** Downsamples an ARGB pixel buffer to 32x32 average luma and returns the 16-region hash. */
+    /**
+     * 把图标哈希解析成方向：先精确命中，再带容差找最近邻。
+     *
+     * 找不到「明显更优」的候选就返回 null。调用方据此把状态置为 `unrecognized`，
+     * 手环显示「暂无导航」——绝不按最接近的那个猜一个方向。
+     */
+    fun lookupIcon(hash: String): String? {
+        iconHashMap[hash]?.let { return it }
+        val parts = hash.split('-')
+        if (parts.size != 16) return null
+        val probe = IntArray(16)
+        for (i in 0 until 16) probe[i] = parts[i].toIntOrNull() ?: return null
+
+        var bestMad = Double.MAX_VALUE
+        var bestAction: String? = null
+        for ((vec, action) in iconVectors) {
+            val mad = meanAbsDiff(probe, vec)
+            if (mad < bestMad) {
+                bestMad = mad
+                bestAction = action
+            }
+        }
+        val winner = bestAction ?: return null
+        if (bestMad > ICON_MATCH_MAX_MAD) return null
+
+        // 亚军只在不同方向里找：`straight` 有多条种子，它们互为同一方向，不该互相压分。
+        var runnerUpMad = Double.MAX_VALUE
+        for ((vec, action) in iconVectors) {
+            if (action == winner) continue
+            val mad = meanAbsDiff(probe, vec)
+            if (mad < runnerUpMad) runnerUpMad = mad
+        }
+        if (runnerUpMad != Double.MAX_VALUE && bestMad > runnerUpMad * ICON_MATCH_MARGIN) return null
+        return winner
+    }
+
+    private fun meanAbsDiff(a: IntArray, b: IntArray): Double {
+        var sum = 0
+        for (i in a.indices) sum += kotlin.math.abs(a[i] - b[i])
+        return sum.toDouble() / a.size
+    }
+
     fun hashIcon(pixels: IntArray, width: Int, height: Int): String? {
         val gray = downsampleGray(pixels, width, height) ?: return null
         val side = 32
