@@ -52,9 +52,34 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # 统一生成一次签名；APK 和 RPK 都用它，证书才会一致。
-      - name: Generate shared debug signing
-        run: python scripts/gen-debug-signing.py
+      # 固定签名：优先用 secrets 里持久化的签名材料，保证每次构建证书一致。
+      # 小米 SDK 会对调用方做 fingerprint 校验，证书一变就 "fingerprint verify failed"，
+      # 所以绝不能每次构建随机生成。没有 secrets 时回退生成，并上传材料做首次引导。
+      - name: Prepare signing
+        env:
+          KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
+          PROPERTIES_B64: ${{ secrets.SIGNING_PROPERTIES_B64 }}
+          PRIVATE_PEM_B64: ${{ secrets.SIGNING_PRIVATE_PEM_B64 }}
+          CERT_PEM_B64: ${{ secrets.SIGNING_CERT_PEM_B64 }}
+        run: |
+          mkdir -p app/signing
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "using persisted signing material from secrets"
+            printf '%s' "$KEYSTORE_B64" | base64 -d > app/signing/debug.jks
+            printf '%s' "$PROPERTIES_B64" | base64 -d > app/signing/signing.local.properties
+            printf '%s' "$PRIVATE_PEM_B64" | base64 -d > app/signing/private.pem
+            printf '%s' "$CERT_PEM_B64" | base64 -d > app/signing/certificate.pem
+          else
+            echo "no signing secrets; generating fresh material (bootstrap)"
+            python scripts/gen-debug-signing.py
+          fi
+
+      - name: Upload signing material (bootstrap only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: signing-material
+          path: app/signing/
+          if-no-files-found: warn
 
       # 小米官方 SDK 的 AAR 不随仓库分发。构建时从官方示例包取回，
       # 并用仓库自带的 check-aar-hash.py 校验 SHA256，通过后才编译。
