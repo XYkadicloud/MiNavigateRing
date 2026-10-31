@@ -31,6 +31,7 @@ import com.minavigatering.probe.navigation.isIgnoringBatteryOptimizations
 import com.minavigatering.probe.navigation.mapNavigationUi
 import com.minavigatering.probe.navigation.miFitnessAppDetailsIntent
 import com.minavigatering.probe.navigation.requestIgnoreBatteryOptimizations
+import com.minavigatering.probe.navigation.startActivitySafely
 import com.minavigatering.probe.protocol.NavCodec
 import com.minavigatering.probe.protocol.StateMessage
 import com.minavigatering.probe.transport.ProbeActions
@@ -176,7 +177,15 @@ private fun navigationSettingActions(context: Context): NavigationSettingActions
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
         )
     },
-    miFitness = { context.startActivity(miFitnessAppDetailsIntent()) },
+    miFitness = {
+        // Resolved at tap time: com.mi.health and com.xiaomi.wearable are different installs.
+        val intent = miFitnessAppDetailsIntent(context)
+        if (intent == null) {
+            startActivitySafely(context, Intent(Settings.ACTION_APPLICATION_SETTINGS))
+        } else {
+            startActivitySafely(context, intent)
+        }
+    },
 )
 
 /** Reopening the page while the bridge preference is on resumes the foreground session once. */

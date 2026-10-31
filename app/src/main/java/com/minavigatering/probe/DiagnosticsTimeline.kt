@@ -1,6 +1,8 @@
 package com.minavigatering.probe
 
+import android.content.Intent
 import android.os.SystemClock
+import android.provider.Settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -211,7 +213,15 @@ fun BackgroundPolicyDiagnostics() {
         style = MaterialTheme.typography.bodySmall,
     )
     Button(onClick = { requestIgnoreBatteryOptimizations(context) }) { Text("允许后台运行") }
-    Button(onClick = { startActivitySafely(context, miFitnessAppDetailsIntent()) }) {
+    Button(onClick = {
+        val intent = miFitnessAppDetailsIntent(context)
+        // Neither companion variant installed: fall back to the app list, never a dead button.
+        if (intent == null) {
+            startActivitySafely(context, Intent(Settings.ACTION_APPLICATION_SETTINGS))
+        } else {
+            startActivitySafely(context, intent)
+        }
+    }) {
         Text("打开小米运动健康应用信息")
     }
 }

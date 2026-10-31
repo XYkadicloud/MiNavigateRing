@@ -8,8 +8,26 @@ import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 
-/** Package of the official companion app whose background policy also gates the bridge. */
-const val MI_FITNESS_PACKAGE = "com.mi.health"
+/**
+ * Packages of the official companion app whose background policy also gates the bridge.
+ *
+ * Xiaomi ships two variants: the global Mi Fitness (`com.xiaomi.wearable`, e.g. 3.52.0i) and
+ * the mainland 小米运动健康 (`com.mi.health`). A device normally has exactly one, so the
+ * package is resolved at runtime instead of being hard-coded — hard-coding `com.mi.health`
+ * left the row dead on every phone that only had the global build.
+ */
+val MI_FITNESS_PACKAGES = listOf("com.xiaomi.wearable", "com.mi.health")
+
+/** The companion package actually installed on this device, or null when neither is present. */
+fun installedMiFitnessPackage(context: Context): String? =
+    MI_FITNESS_PACKAGES.firstOrNull { pkg ->
+        try {
+            context.packageManager.getApplicationInfo(pkg, 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
 
 /** True when this app is already exempt from battery optimization. */
 fun isIgnoringBatteryOptimizations(context: Context): Boolean =
@@ -23,9 +41,16 @@ fun requestIgnoreBatteryOptimizationsIntent(context: Context): Intent =
 /** The battery-optimization settings page, used when the direct request is refused. */
 fun batterySettingsFallbackIntent(): Intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
 
-/** The official companion app's details page, so its background policy can be checked. */
-fun miFitnessAppDetailsIntent(): Intent =
-    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).setData(Uri.parse("package:$MI_FITNESS_PACKAGE"))
+/**
+ * The official companion app's details page, so its background policy can be checked.
+ *
+ * Returns null when neither companion variant is installed; the caller must then fall back
+ * instead of launching an intent that would throw `ActivityNotFoundException`.
+ */
+fun miFitnessAppDetailsIntent(context: Context): Intent? {
+    val pkg = installedMiFitnessPackage(context) ?: return null
+    return Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).setData(Uri.parse("package:$pkg"))
+}
 
 /**
  * Starts [intent] from any context.
