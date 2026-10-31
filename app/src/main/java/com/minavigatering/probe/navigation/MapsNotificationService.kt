@@ -87,8 +87,10 @@ class MapsNotificationService : NotificationListenerService() {
         val fields = listOf(Notification.EXTRA_TITLE, Notification.EXTRA_TEXT,
             Notification.EXTRA_BIG_TEXT, Notification.EXTRA_SUB_TEXT).mapNotNull { extras.getCharSequence(it)?.toString() } +
             (extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.map { it.toString() } ?: emptyList())
-        val icon = sbn.notification.largeIcon
-            ?: (extras.get(Notification.EXTRA_LARGE_ICON) as? Bitmap)
+        // 转向图标：优先 EXTRA_LARGE_ICON（Bitmap），再退回 largeIcon。
+        // 用 `as? Bitmap` 兼容不同 SDK 上 largeIcon 的类型差异。
+        val icon: Bitmap? = (extras.get(Notification.EXTRA_LARGE_ICON) as? Bitmap)
+            ?: (sbn.notification.largeIcon as? Bitmap)
         val (pixels, w, h) = if (icon != null) {
             val px = IntArray(icon.width * icon.height)
             icon.getPixels(px, 0, icon.width, 0, 0, icon.width, icon.height)

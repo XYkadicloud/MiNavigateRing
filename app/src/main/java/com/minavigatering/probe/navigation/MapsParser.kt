@@ -197,8 +197,8 @@ object MapsParser {
             }
         }
         return (0 until parts * parts).joinToString("-") {
-            if (count[it] > 0) sum[it] / count[it] else 0
-        }.toString()
+            (if (count[it] > 0) sum[it] / count[it] else 0).toString()
+        }
     }
 
     private fun downsampleGray(pixels: IntArray, w: Int, h: Int): IntArray? {

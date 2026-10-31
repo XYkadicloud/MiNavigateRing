@@ -45,7 +45,7 @@ jobs:
           echo "sdkmanager: $SM"
           if [ -n "$SM" ]; then
             yes | "$SM" --licenses >/dev/null 2>&1 || true
-            "$SM" "platforms;android-37" "build-tools;37.0.0" "platform-tools" || true
+            "$SM" "platforms;android-37" "platforms;android-37.0" "build-tools;37.0.0" "platform-tools" || true
             "$SM" --list_installed | head -60 || true
           fi
 
