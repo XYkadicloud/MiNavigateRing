@@ -108,6 +108,17 @@ cd .. && node --test band-app/test/startup.test.js band-app/test/session.test.js
 
 `scripts/test-product-runtime.js`（手环页的“宿主门禁”）依赖作者本机上一个只读的快应用运行层（路径写死在脚本里），**外部环境无法直接运行**。`tests/` 下的 Python 脚本是实机探针工具的测试，也和作者的设备环境相关。
 
+### 云端构建（GitHub Actions）
+
+仓库自带一个 workflow（`.github/workflows/build.yml`），push 到 `google-maps` / `main` 分支或手动触发即可在 GitHub 上编译，**不需要本机装 Android SDK**：
+
+- 从[官方示例包](https://cdn.cnbj3-fusion.fds.api.mi-img.com/quickapp-vela/interconnect_dev_test_demo.zip)取回 AAR，并用 `scripts/check-aar-hash.py` 校验 SHA256；
+- 生成一份共享调试签名（APK 与 RPK 证书一致，满足官方 interconnect 要求）；
+- 跑 `testDebugUnitTest`、`assembleDebug`，再 `npm install` + `build-rpk.js`；
+- 产物以 artifact 形式上传：`app-debug-apk`（`app-debug.apk`）与 `band-rpk`（导航 RPK）。
+
+> 注意：workflow 里 `compileSdk = 37` 依赖 runner 上的 SDK Platform 37；若某天 runner 不再提供，需要相应调整。
+
 ## 安装
 
 目前仓库不提供预编译的 APK / RPK，请先按上面的“构建”自己生成。
