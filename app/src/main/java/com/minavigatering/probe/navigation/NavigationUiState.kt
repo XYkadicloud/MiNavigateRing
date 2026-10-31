@@ -69,20 +69,20 @@ private val ACTION_LABELS: Map<String, String> = mapOf(
  * docs/notification-product-polish.md and is never shown on screen.
  */
 private val PHASE_SENTENCES: Map<NavigationPhase, String> = mapOf(
-    NavigationPhase.PERMISSION_OFF to "请先允许读取Google 地图通知。",
+    NavigationPhase.PERMISSION_OFF to "请先允许读取 Google 地图通知。",
     NavigationPhase.BRIDGE_OFF to "导航桥已关闭，请开启后再开始。",
-    NavigationPhase.WAITING to "请在手环打开导航页，再在Google 地图开始导航。",
+    NavigationPhase.WAITING to "请在手环打开导航页，再在 Google 地图开始导航。",
     NavigationPhase.CONNECTING to "正在连接手环。",
     NavigationPhase.ACTIVE to "按画面上的方向继续。",
     NavigationPhase.UNAVAILABLE to "暂时没有可用的转向信息。",
-    NavigationPhase.ENDED to "需要时请在Google 地图重新开始。",
+    NavigationPhase.ENDED to "需要时请在 Google 地图重新开始。",
     NavigationPhase.LISTENER_DISCONNECTED to
-        "已允许读取通知，但系统没有把Google 地图通知交给本应用。请在通知读取设置里把“MapRing Google 地图导航”关闭再开启一次，然后回到这里。",
+        "已允许读取通知，但系统没有把 Google 地图通知交给本应用。请在通知读取设置里把“MapRing Google 地图导航”关闭再开启一次，然后回到这里。",
 )
 
 /** Waiting guidance when the home switch promises the band page will open by itself. */
 private const val WAITING_AUTO_LAUNCH_SENTENCE =
-    "在Google 地图开始步行或骑行导航，手环导航页会自动打开。"
+    "在 Google 地图开始步行或骑行导航，手环导航页会自动打开。"
 
 /** Unavailable: Maps is navigating but the action is empty or outside the 14 allowed labels. */
 private const val UNAVAILABLE_UNKNOWN_ACTION_SENTENCE =
@@ -90,11 +90,11 @@ private const val UNAVAILABLE_UNKNOWN_ACTION_SENTENCE =
 
 /** Unavailable: Maps is navigating but this notice carried no readable direction. */
 private const val UNAVAILABLE_ACTION_MISSING_SENTENCE =
-    "Google 地图正在导航，但这条提示读不出转向方向。手环不会显示猜测的方向，请看Google 地图或等下一条提示。"
+    "Google 地图正在导航，但这条提示读不出转向方向。手环不会显示猜测的方向，请看 Google 地图或等下一条提示。"
 
 /** Unavailable: no Maps navigation notice at all, so there is nothing to read yet. */
 private const val UNAVAILABLE_NO_NOTICE_SENTENCE =
-    "没有读到Google 地图的导航提示：导航可能已结束，或Google 地图已退出。要继续请回到Google 地图重新开始导航。"
+    "没有读到 Google 地图的导航提示：导航可能已结束，或 Google 地图已退出。要继续请回到 Google 地图重新开始导航。"
 
 /** One guidance sentence per phase; the two phases whose reason varies pick it themselves. */
 private fun guidanceFor(
@@ -134,7 +134,7 @@ fun mapNavigationUi(
     // Bridge first, then foreground session, then node presence. Deliberately independent of
     // the permission/latest/link/ACK inputs.
     val bridgeLine = when {
-        !bridgeEnabled -> "开启后自动同步Google 地图导航"
+        !bridgeEnabled -> "开启后自动同步 Google 地图导航"
         !sessionRunning -> "导航桥启动中"
         else -> "导航桥已开启"
     }
@@ -166,7 +166,7 @@ fun mapNavigationUi(
         val headline = when (phase) {
             NavigationPhase.PERMISSION_OFF -> "通知读取未开启"
             NavigationPhase.BRIDGE_OFF -> "导航桥已关闭"
-            NavigationPhase.WAITING -> "等待Google 地图导航"
+            NavigationPhase.WAITING -> "等待 Google 地图导航"
             NavigationPhase.CONNECTING -> "通信连接中"
             NavigationPhase.UNAVAILABLE -> "信息暂不可用"
             NavigationPhase.ENDED -> "导航已结束"

@@ -60,7 +60,7 @@ class NavigationUiStateTest {
             selectedMode = NavProtocol.MODE_WALK,
             latest = activeLeft(),
         )
-        assertEquals("\u5f00\u542f\u540e\u81ea\u52a8\u540c\u6b65\u9ad8\u5fb7\u5bfc\u822a", bridgeOff.bridgeLine)
+        assertEquals("开启后自动同步 Google 地图导航", bridgeOff.bridgeLine)
         assertNull(bridgeOff.bandLine)
 
         val sessionNotRunning = mapNavigationUi(
@@ -165,7 +165,7 @@ class NavigationUiStateTest {
             val m = mapNavigationUi(true, true, true, true, NavProtocol.MODE_WALK, activeLeft(navStatus = NavProtocol.STATUS_IDLE))
             assertEquals(NavigationPhase.WAITING, m.phase)
             assertNull(m.actionLabel)
-            assertEquals("\u8bf7\u5728\u624b\u73af\u6253\u5f00\u5bfc\u822a\u9875\uff0c\u518d\u5728\u9ad8\u5fb7\u5f00\u59cb\u5bfc\u822a\u3002", m.guidance)
+            assertEquals("请在手环打开导航页，再在 Google 地图开始导航。", m.guidance)
         }
         // 权限关：PERMISSION_OFF
         run {
