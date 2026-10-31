@@ -2,6 +2,7 @@ package com.minavigatering.probe.navigation
 
 import android.app.Notification
 import android.graphics.Bitmap
+import android.graphics.drawable.Icon
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
@@ -87,10 +88,11 @@ class MapsNotificationService : NotificationListenerService() {
         val fields = listOf(Notification.EXTRA_TITLE, Notification.EXTRA_TEXT,
             Notification.EXTRA_BIG_TEXT, Notification.EXTRA_SUB_TEXT).mapNotNull { extras.getCharSequence(it)?.toString() } +
             (extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.map { it.toString() } ?: emptyList())
-        // 转向图标：优先 EXTRA_LARGE_ICON（Bitmap），再退回 largeIcon。
-        // 用 `as? Bitmap` 兼容不同 SDK 上 largeIcon 的类型差异。
+        // 转向图标：Android 10+ 的 largeIcon 是 Icon（typ=BITMAP），不是裸 Bitmap。
+        // 先兼容旧版裸 Bitmap，再走 Icon.getBitmap()。
         val icon: Bitmap? = (extras.get(Notification.EXTRA_LARGE_ICON) as? Bitmap)
-            ?: (sbn.notification.largeIcon as? Bitmap)
+            ?: (extras.get(Notification.EXTRA_LARGE_ICON) as? Icon)?.bitmapOrNull()
+            ?: sbn.notification.largeIcon?.bitmapOrNull()
         val (pixels, w, h) = if (icon != null) {
             val px = IntArray(icon.width * icon.height)
             icon.getPixels(px, 0, icon.width, 0, 0, icon.width, icon.height)
@@ -236,3 +238,6 @@ class MapsNotificationService : NotificationListenerService() {
         super.onDestroy()
     }
 }
+
+/** 只有 BITMAP 类型的 Icon 才有可用的位图；其他类型返回 null。 */
+private fun Icon.bitmapOrNull(): Bitmap? = if (type == Icon.TYPE_BITMAP) bitmap else null
