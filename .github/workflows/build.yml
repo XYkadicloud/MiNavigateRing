@@ -113,6 +113,44 @@ jobs:
       - name: Build RPK
         run: node scripts/build-rpk.js
 
+      # 产物级校验：直接读打包结果，而不是相信源码。
+      # ① APK 的 applicationId 必须是 com.mapring.probe —— 这正是「与原版
+      #    com.minavigatering.probe 可同时安装」的前提，同时避开 Mi Fitness
+      #    里按包名写死的旧证书指纹。若有人误改回旧包名，这里必须失败。
+      # ② RPK 的 package / version 必须与源 manifest 一致，且包名与 APK 相同，
+      #    否则小米运动健康不会出现授权页（表现为 app not installed）。
+      - name: Verify artifacts
+        run: |
+          set -eu
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          AAPT="$(find "$SDK" -name aapt2 -type f 2>/dev/null | sort | tail -1)"
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          echo "aapt2: $AAPT"
+          test -f "$APK"
+          BADGING="$("$AAPT" dump badging "$APK")"
+          echo "$BADGING" | head -3
+          PKG="$(echo "$BADGING" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+          echo "APK package = $PKG"
+          test "$PKG" = "com.mapring.probe" || { echo "APK applicationId must be com.mapring.probe"; exit 1; }
+          test "$PKG" != "com.minavigatering.probe" || { echo "must not collide with the original app"; exit 1; }
+          RPK="$(ls band-app/dist/*.rpk | head -1)"
+          echo "RPK = $RPK"
+          node -e '
+            const AdmZip = require("./band-app/node_modules/adm-zip");
+            const fs = require("fs");
+            const rpk = process.argv[1];
+            const man = JSON.parse(new AdmZip(rpk).readAsText("manifest.json"));
+            const src = JSON.parse(fs.readFileSync("band-app/src/manifest.json", "utf8"));
+            const fail = (m) => { console.error("RPK check failed: " + m); process.exit(1); };
+            console.log("RPK package =", man.package, "version =", man.versionName + "/" + man.versionCode);
+            if (man.package !== "com.mapring.probe") fail("package is " + man.package);
+            if (man.package !== src.package) fail("package differs from source manifest");
+            if (man.versionName !== src.versionName) fail("versionName differs from source manifest");
+            if (man.versionCode !== src.versionCode) fail("versionCode differs from source manifest");
+            console.log("artifact-verify-ok");
+          ' "$RPK"
+          sha256sum "$APK" "$RPK"
+
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
