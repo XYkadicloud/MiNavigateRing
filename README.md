@@ -92,7 +92,7 @@ export ANDROID_HOME=/path/to/Android/Sdk
 ```bash
 cd band-app && npm install        # 安装 aiot-toolkit 2.0.5
 cd .. && node scripts/build-rpk.js
-# 产物：band-app/dist/com.minavigatering.probe.debug.<versionName>.rpk
+# 产物：band-app/dist/com.mapring.probe.debug.<versionName>.rpk
 ```
 
 - 手环应用和手机应用**必须同包名、同签名证书**（官方 interconnect 的要求），所以 RPK 用的是手机端 `app/signing/` 里的同一份证书，请先完成一次手机端构建。构建细节见 [docs/rpk-build.md](docs/rpk-build.md)。
@@ -101,9 +101,9 @@ cd .. && node scripts/build-rpk.js
 ### 测试
 
 ```bash
-./gradlew :app:testDebugUnitTest                   # 手机端单测，49 项
-cd band-app && npm install                         # 先装依赖
-cd .. && node --test band-app/test/startup.test.js band-app/test/session.test.js band-app/test/codec.test.js
+./gradlew :app:testDebugUnitTest                   # 手机端单测，62 项
+cd band-app && npm install                         # 先装依赖（手环单测需要 aiot-parse5）
+cd .. && node --test band-app/test/startup.test.js band-app/test/session.test.js band-app/test/codec.test.js   # 手环端单测，16 项
 ```
 
 `scripts/test-product-runtime.js`（手环页的“宿主门禁”）依赖作者本机上一个只读的快应用运行层（路径写死在脚本里），**外部环境无法直接运行**。`tests/` 下的 Python 脚本是实机探针工具的测试，也和作者的设备环境相关。
@@ -125,6 +125,21 @@ cd .. && node --test band-app/test/startup.test.js band-app/test/session.test.js
 
 1. **手机**：`adb install -r app/build/outputs/apk/debug/app-debug.apk`。
 2. **手环**：把 RPK 手动装到手环上。可参考小米官方资料里的“Debug → 第三方应用 → 安装 RPK”路径（需要对应版本的小米运动健康，见 [PROJECT_SPEC.md](PROJECT_SPEC.md) 第 10 节），或使用第三方蓝牙安装工具。装之前请核对哈希，不要装来路不明的包。
+
+### 与原版（高德版）同时安装
+
+**可以共存，互不影响。** 两边用的不是同一个包名：
+
+| | 包名 | 说明 |
+|---|---|---|
+| 原版（高德） | `com.minavigatering.probe` | 原作者 laizhixingxingdeli 的版本 |
+| 本版本（Google 地图） | `com.mapring.probe` | 手机 APK 与手环 RPK 都用这个 |
+
+所以手机上两个 App 可以同时装、各自独立授权；手环上也会出现两个应用条目（“导航环”和“地图环”），可以按需删掉其中一个。
+
+两边的通知监听互不干扰：原版只读**高德**的通知，本版本只读 **Google 地图**（`com.google.android.apps.maps`）的通知。同时开着也不会重复推送——因为推送来源不同，除非你两个导航 App 一起用。
+
+> 为什么不共用包名：小米运动健康在**首次授权**时按包名记录调用方的证书指纹，之后不提供重置入口。共用一个包名意味着换过证书之后永久失配（`SignatureVerifyFailedException`，表现为手环一直“连接中”）。不同包名等于各有一张白纸。
 
 ## 首次设置
 

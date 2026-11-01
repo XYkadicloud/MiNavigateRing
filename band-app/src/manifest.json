@@ -1,8 +1,8 @@
 {
   "package": "com.mapring.probe",
   "name": "地图环",
-  "versionName": "0.2.0-navigation",
-  "versionCode": 12,
+  "versionName": "0.3.0-navigation",
+  "versionCode": 13,
   "icon": "/logo.png",
   "minPlatformVersion": 1070,
   "deviceTypeList": [

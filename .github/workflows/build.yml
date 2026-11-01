@@ -103,6 +103,13 @@ jobs:
       - name: Install band dependencies
         run: cd band-app && npm install
 
+      - name: Band unit tests
+        run: >-
+          node --test
+          band-app/test/startup.test.js
+          band-app/test/session.test.js
+          band-app/test/codec.test.js
+
       - name: Build RPK
         run: node scripts/build-rpk.js
 
